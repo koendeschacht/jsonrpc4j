@@ -1,6 +1,5 @@
 package com.googlecode.jsonrpc4j;
 
-import com.googlecode.jsonrpc4j.spring.rest.JsonRpcRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,10 +169,6 @@ public abstract class ProxyUtil {
 		} else {
 			return jsonRpcMethod.value();
 		}
-	}
-	
-	public static <T> T createClientProxy(Class<T> clazz, JsonRpcRestClient client) {
-		return createClientProxy(clazz.getClassLoader(), clazz, client);
 	}
 	
 	/**
