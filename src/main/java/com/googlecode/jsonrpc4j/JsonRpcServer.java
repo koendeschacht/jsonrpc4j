@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
@@ -93,44 +91,7 @@ public class JsonRpcServer extends JsonRpcBasicServer {
 		this.gzipResponses = false;
 	}
 	
-	/**
-	 * Handles a portlet request.
-	 *
-	 * @param request  the {@link ResourceRequest}
-	 * @param response the {@link ResourceResponse}
-	 * @throws IOException on error
-	 */
-	public void handle(ResourceRequest request, ResourceResponse response) throws IOException {
-		logger.debug("Handing ResourceRequest {}", request.getMethod());
-		response.setContentType(contentType);
-		InputStream input = getRequestStream(request);
-		OutputStream output = response.getPortletOutputStream();
-		handleRequest(input, output);
-		// fix to not flush within handleRequest() but outside so http status code can be set
-		output.flush();
-	}
-	
-	private InputStream getRequestStream(ResourceRequest request) throws IOException {
-		if (request.getMethod().equals("POST")) {
-			return request.getPortletInputStream();
-		} else if (request.getMethod().equals("GET")) {
-			return createInputStream(request);
-		} else {
-			throw new IOException("Invalid request method, only POST and GET is supported");
-		}
-	}
-	
-	private static InputStream createInputStream(ResourceRequest request) throws IOException {
-		return createInputStream(request.getParameter(METHOD), request.getParameter(ID), request.getParameter(PARAMS));
-	}
-	
-	/**
-	 * Handles a servlet request.
-	 *
-	 * @param request  the {@link HttpServletRequest}
-	 * @param response the {@link HttpServletResponse}
-	 * @throws IOException on error
-	 */
+
 	public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		logger.debug("Handling HttpServletRequest {}", request);
 		response.setContentType(contentType);
