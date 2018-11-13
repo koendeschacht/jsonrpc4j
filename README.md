@@ -1,3 +1,7 @@
+# Changes since clone:
+
+1. Moved project to maven, no more support for portlet (and thus no dependency)
+
 # JSON-RPC for Java
 
 This project aims to provide the facility to easily implement
