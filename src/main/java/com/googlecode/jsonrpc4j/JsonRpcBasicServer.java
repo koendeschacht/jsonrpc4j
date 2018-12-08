@@ -3,7 +3,10 @@ package com.googlecode.jsonrpc4j;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.googlecode.jsonrpc4j.ErrorResolver.JsonError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +15,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -46,18 +48,11 @@ public class JsonRpcBasicServer {
     public static final String EXCEPTION_TYPE_NAME = "exceptionTypeName";
     public static final String VERSION = "2.0";
     public static final int CODE_OK = 0;
-    public static final String WEB_PARAM_ANNOTATION_CLASS_LOADER = "javax.jws.WebParam";
     public static final String NAME = "name";
     public static final String NULL = "null";
     private static final Logger logger = LoggerFactory.getLogger(JsonRpcBasicServer.class);
     private static final ErrorResolver DEFAULT_ERROR_RESOLVER = new MultipleErrorResolver(AnnotationsErrorResolver.INSTANCE, DefaultErrorResolver.INSTANCE);
     private static Pattern BASE64_PATTERN = Pattern.compile("[A-Za-z0-9_=-]+");
-    private static Class<? extends Annotation> WEB_PARAM_ANNOTATION_CLASS;
-    private static Method WEB_PARAM_NAME_METHOD;
-
-    static {
-        loadAnnotationSupportEngine();
-    }
 
     private final ObjectMapper mapper;
     private final Class<?> remoteInterface;
@@ -123,16 +118,6 @@ public class JsonRpcBasicServer {
      */
     public JsonRpcBasicServer(final Object handler) {
         this(new ObjectMapper(), handler, null);
-    }
-
-    private static void loadAnnotationSupportEngine() {
-        final ClassLoader classLoader = JsonRpcBasicServer.class.getClassLoader();
-        try {
-            WEB_PARAM_ANNOTATION_CLASS = classLoader.loadClass(WEB_PARAM_ANNOTATION_CLASS_LOADER).asSubclass(Annotation.class);
-            WEB_PARAM_NAME_METHOD = WEB_PARAM_ANNOTATION_CLASS.getMethod(NAME);
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            logger.error("Could not find {}.{}", WEB_PARAM_ANNOTATION_CLASS_LOADER, NAME, e);
-        }
     }
 
     /**
@@ -1154,11 +1139,6 @@ public class JsonRpcBasicServer {
         @SuppressWarnings("Convert2streamapi")
         private List<JsonRpcParam> getAnnotatedParameterNames(Method method) {
             List<JsonRpcParam> parameterNames = new ArrayList<>();
-            for (List<? extends Annotation> webParamAnnotation : getWebParameterAnnotations(method)) {
-                if (!webParamAnnotation.isEmpty()) {
-                    parameterNames.add(createNewJsonRcpParamType(webParamAnnotation.get(0)));
-                }
-            }
             for (List<JsonRpcParam> annotation : getJsonRpcParamAnnotations(method)) {
                 if (!annotation.isEmpty()) {
                     parameterNames.add(annotation.get(0));
@@ -1167,28 +1147,6 @@ public class JsonRpcBasicServer {
             return parameterNames;
         }
 
-        private List<? extends List<? extends Annotation>> getWebParameterAnnotations(Method method) {
-            if (WEB_PARAM_ANNOTATION_CLASS == null) {
-                return new ArrayList<>();
-            }
-            return ReflectionUtil.getParameterAnnotations(method, WEB_PARAM_ANNOTATION_CLASS);
-        }
-
-        private JsonRpcParam createNewJsonRcpParamType(final Annotation annotation) {
-            return new JsonRpcParam() {
-                public Class<? extends Annotation> annotationType() {
-                    return JsonRpcParam.class;
-                }
-
-                public String value() {
-                    try {
-                        return (String) WEB_PARAM_NAME_METHOD.invoke(annotation);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
-        }
 
         private List<List<JsonRpcParam>> getJsonRpcParamAnnotations(Method method) {
             return ReflectionUtil.getParameterAnnotations(method, JsonRpcParam.class);
